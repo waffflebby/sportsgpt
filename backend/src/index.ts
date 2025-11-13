@@ -33,7 +33,8 @@ registerRoutes(app);
 async function bootstrap() {
   await runMigrations();
 
-  const port = Number(process.env.PORT) || 8080;
+  const port = Number(Bun.env.PORT || 8080);
+  console.log("Starting server on port:", port);
   const server = Bun.serve({
     hostname: "0.0.0.0",
     port,
