@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { logger } from "./utils/logger";
 import { loggingMiddleware } from "./middleware/logging";
 import { errorHandler } from "./middleware/errorHandler";
@@ -9,6 +10,15 @@ import { env } from "./utils/env";
 import type { AppBindings } from "./types";
 
 const app = new Hono<AppBindings>();
+
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "https://sportsgpt.netlify.app"
+  ],
+  allowMethods: ["GET", "POST", "OPTIONS"],
+  allowHeaders: ["Content-Type", "Authorization"],
+}));
 
 app.use("*", errorHandler);
 app.use("*", loggingMiddleware);
