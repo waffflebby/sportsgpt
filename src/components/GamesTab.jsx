@@ -1,315 +1,240 @@
-import React, { useState } from 'react'
-import { Star, ChevronRight, ChevronDown } from 'lucide-react'
+import React, { useMemo, useState } from 'react'
+import { ChevronRight, RefreshCw, Star } from 'lucide-react'
 
-export default function GamesTab({ onSelectGame, onAskAI, onFollow }) {
-  const [followed, setFollowed] = useState([])
-  const [selectedDay, setSelectedDay] = useState('today')
-  const [collapsedSports, setCollapsedSports] = useState([])
-
-  const allGames = {
-    yesterday: [
-      {
-        id: 101,
-        away: { name: 'Warriors', score: 112 },
-        home: { name: 'Suns', score: 108 },
-        status: 'FINAL',
-        time: 'Final',
-        league: 'NBA',
-        teams: []
-      },
-      {
-        id: 102,
-        away: { name: 'Packers', score: 27 },
-        home: { name: 'Bears', score: 24 },
-        status: 'FINAL',
-        time: 'Final',
-        league: 'NFL',
-        teams: []
-      }
-    ],
-    today: [
-    {
-      id: 1,
-      away: { name: 'Lakers', score: 78 },
-      home: { name: 'Celtics', score: 75 },
-      status: 'LIVE',
-      time: 'Q3 5:42',
-      league: 'NBA',
-      teams: [
-        {
-          name: 'Lakers',
-          score: 78,
-          quarters: [28, 22, 28, 0],
-          players: [
-            { name: 'LeBron James', pts: 28, reb: 8, ast: 6, fg: '11/18', three: '2/4', stl: 2 },
-            { name: 'Anthony Davis', pts: 24, reb: 12, ast: 2, fg: '9/15', three: '0/1', stl: 1 },
-            { name: 'Austin Reaves', pts: 18, reb: 3, ast: 4, fg: '7/12', three: '2/5', stl: 1 }
-          ]
-        },
-        {
-          name: 'Celtics',
-          score: 75,
-          quarters: [26, 24, 25, 0],
-          players: [
-            { name: 'Jayson Tatum', pts: 32, reb: 9, ast: 5, fg: '12/20', three: '3/7', stl: 2 },
-            { name: 'Jaylen Brown', pts: 22, reb: 7, ast: 3, fg: '8/16', three: '1/4', stl: 1 },
-            { name: 'Derrick White', pts: 14, reb: 4, ast: 8, fg: '5/11', three: '2/5', stl: 3 }
-          ]
-        }
-      ]
-    },
-    {
-      id: 2,
-      away: { name: '49ers', score: 24 },
-      home: { name: 'Cowboys', score: 21 },
-      status: 'LIVE',
-      time: 'Q3 10:42',
-      league: 'NFL',
-      teams: [
-        {
-          name: '49ers',
-          score: 24,
-          players: [
-            { name: 'Brock Purdy', pos: 'QB', passYds: 245, passTd: 2, int: 0, cmp: 18, att: 25 },
-            { name: 'Christian McCaffrey', pos: 'RB', rush: 18, rushYds: 87, rushTd: 1, rec: 5, recYds: 42, td: 0 },
-            { name: 'Brandon Aiyuk', pos: 'WR', rec: 6, recYds: 78, td: 0 },
-            { name: 'George Kittle', pos: 'TE', rec: 4, recYds: 52, td: 1 }
-          ]
-        },
-        {
-          name: 'Cowboys',
-          score: 21,
-          players: [
-            { name: 'Dak Prescott', pos: 'QB', passYds: 268, passTd: 2, int: 1, cmp: 22, att: 32 },
-            { name: 'Ezekiel Elliott', pos: 'RB', rush: 14, rushYds: 52, rushTd: 0, rec: 3, recYds: 18, td: 0 },
-            { name: 'CeeDee Lamb', pos: 'WR', rec: 9, recYds: 124, td: 1 },
-            { name: 'Jake Ferguson', pos: 'TE', rec: 5, recYds: 48, td: 0 }
-          ]
-        }
-      ]
-    },
-    {
-      id: 3,
-      away: { name: 'Man City', score: 2 },
-      home: { name: 'Liverpool', score: 1 },
-      status: 'LIVE',
-      time: '78\'',
-      league: 'Soccer',
-      teams: [
-        {
-          name: 'Man City',
-          score: 2,
-          players: [
-            { name: 'Erling Haaland', goals: 2, goalMinutes: ['23', '67'], assists: 0, shots: 5, shotsOnTarget: 3, passes: 28, passAccuracy: 92, yellowCards: 1, redCards: 0 },
-            { name: 'Rodri', goals: 0, assists: 1, shots: 1, shotsOnTarget: 0, passes: 45, passAccuracy: 88, yellowCards: 0, redCards: 0 }
-          ]
-        },
-        {
-          name: 'Liverpool',
-          score: 1,
-          players: [
-            { name: 'Mohamed Salah', goals: 1, goalMinutes: ['45'], assists: 0, shots: 4, shotsOnTarget: 2, passes: 32, passAccuracy: 85, yellowCards: 0, redCards: 0 },
-            { name: 'Luis Diaz', goals: 0, assists: 1, shots: 3, shotsOnTarget: 1, passes: 25, passAccuracy: 80, yellowCards: 1, redCards: 0 }
-          ]
-        }
-      ]
-    },
-    {
-      id: 4,
-      away: { name: 'Bucks', score: null },
-      home: { name: 'Heat', score: null },
-      status: 'UPCOMING',
-      time: '7:30 PM ET',
-      league: 'NBA',
-      teams: []
+function formatStatus(game) {
+  if (!game) return ''
+  if (game.status && typeof game.status === 'string') {
+    const status = game.status.toUpperCase()
+    if (status.includes('LIVE') || status.includes('Q') || status.includes('INNING')) {
+      return `LIVE • ${game.time || game.status}`
     }
-  ],
-    tomorrow: [
-      {
-        id: 201,
-        away: { name: 'Nets', score: null },
-        home: { name: 'Knicks', score: null },
-        status: 'UPCOMING',
-        time: '7:00 PM ET',
-        league: 'NBA',
-        teams: []
-      }
-    ]
+    if (status.includes('FINAL') || status.includes('END')) {
+      return 'FINAL'
+    }
+    return game.time || game.status
   }
+  return game.time || ''
+}
 
-  const games = allGames[selectedDay] || []
+function formatTeamName(team, fallback) {
+  if (!team) return fallback
+  return team.name || team.nickname || team.code || fallback
+}
 
-  const handleSelectGame = (game) => {
-    onSelectGame({ ...game, league: game.league })
-  }
+function formatScore(team) {
+  if (!team) return '—'
+  if (team.score != null) return team.score
+  if (team.points != null) return team.points
+  return '—'
+}
+
+export default function GamesTab({
+  games = [],
+  isLoading = false,
+  error = null,
+  onSelectGame,
+  onAskAI,
+  onFollow,
+  onRefresh,
+  selectedGameId = null
+}) {
+  const [followed, setFollowed] = useState([])
+  const [selectedSport, setSelectedSport] = useState('all')
+
+  const leagues = useMemo(() => {
+    const leagueSet = new Set(
+      games
+        .filter(Boolean)
+        .map((game) => (game.league || game.sport || 'other').toLowerCase())
+    )
+    return ['all', ...Array.from(leagueSet)]
+  }, [games])
+
+  const filteredGames = useMemo(() => {
+    return games.filter((game) => {
+      if (!game) return false
+      if (selectedSport === 'all') return true
+      return (game.league || game.sport || 'other').toLowerCase() === selectedSport
+    })
+  }, [games, selectedSport])
 
   const toggleFollow = (gameId, e) => {
     e.stopPropagation()
-    if (followed.includes(gameId)) {
-      setFollowed(followed.filter(id => id !== gameId))
-    } else {
-      setFollowed([...followed, gameId])
-    }
+    setFollowed((prev) => {
+      if (prev.includes(gameId)) {
+        return prev.filter((id) => id !== gameId)
+      }
+      return [...prev, gameId]
+    })
     onFollow?.(gameId)
   }
 
-  const toggleSportCollapse = (sport) => {
-    if (collapsedSports.includes(sport)) {
-      setCollapsedSports(collapsedSports.filter(s => s !== sport))
-    } else {
-      setCollapsedSports([...collapsedSports, sport])
-    }
+  const handleSelectGame = (game) => {
+    if (!game) return
+    onSelectGame?.(game)
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Day Toggle - Underline Style */}
       <div style={{ padding: '0 8px 12px 8px', flexShrink: 0, borderBottom: '1px solid #eee' }}>
-        <div style={{ display: 'flex', gap: '16px' }}>
-          {['yesterday', 'today', 'tomorrow'].map((day) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', flex: 1, gap: '12px' }}>
+            {leagues.map((league) => (
+              <button
+                key={league}
+                onClick={() => setSelectedSport(league)}
+                style={{
+                  flex: 1,
+                  padding: '8px 0',
+                  fontSize: '12px',
+                  fontWeight: selectedSport === league ? '600' : '500',
+                  color: selectedSport === league ? '#1A1511' : '#999',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  borderBottom:
+                    selectedSport === league ? '2px solid #1A1511' : '2px solid transparent',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  textTransform: league === 'all' ? 'capitalize' : 'uppercase'
+                }}
+              >
+                {league === 'all' ? 'All' : league}
+              </button>
+            ))}
+          </div>
+          {onRefresh && (
             <button
-              key={day}
-              onClick={() => setSelectedDay(day)}
+              onClick={onRefresh}
               style={{
-                flex: 1,
-                padding: '8px 0',
-                fontSize: '12px',
-                fontWeight: '600',
-                color: selectedDay === day ? '#1A1511' : '#999',
-                backgroundColor: 'transparent',
                 border: 'none',
-                borderBottom: selectedDay === day ? '2px solid #1A1511' : '2px solid transparent',
+                background: '#f5f5f5',
+                borderRadius: '8px',
+                padding: '6px',
                 cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                textTransform: 'capitalize'
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}
+              title="Refresh live games"
             >
-              {day}
+              <RefreshCw size={14} />
             </button>
-          ))}
+          )}
         </div>
       </div>
 
-      {/* Scrollable Games List - Grouped by Sport */}
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '0 8px' }}>
-          {/* Group games by sport */}
-          {['NBA', 'NFL', 'Soccer'].map((sport) => {
-            const sportGames = games.filter(g => g.league === sport)
-            if (sportGames.length === 0) return null
-            
-            return (
-              <div key={sport}>
-                {/* Sport Header - Clickable */}
-                <button
-                  onClick={() => toggleSportCollapse(sport)}
-                  style={{ 
-                    width: '100%',
-                    padding: '8px 4px 6px 4px', 
-                    marginBottom: '6px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <p style={{ fontSize: '11px', fontWeight: '700', color: '#999', letterSpacing: '0.5px', textTransform: 'uppercase' }}>{sport}</p>
-                  <ChevronDown 
-                    size={14} 
-                    style={{ 
-                      color: '#999', 
-                      transform: collapsedSports.includes(sport) ? 'rotate(-90deg)' : 'rotate(0deg)',
-                      transition: 'transform 0.2s ease'
-                    }} 
-                  />
-                </button>
-                
-                {/* Games for this sport - Collapsible */}
-                {!collapsedSports.includes(sport) && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    {sportGames.map((game) => (
-        <div
-          key={game.id}
-          className="p-2.5 rounded-lg cursor-pointer transition"
-          style={{ backgroundColor: 'var(--surface)', borderBottom: '1px solid var(--border)' }}
-          onClick={() => handleSelectGame(game)}
-        >
-          {/* Header: Status + Follow */}
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center gap-1.5">
-              {game.status === 'LIVE' && (
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10B981', animation: 'pulse 2s infinite' }} />
-              )}
-              <span className="text-xs" style={{ color: '#999' }}>{game.status === 'LIVE' ? `LIVE • ${game.time}` : game.time}</span>
-            </div>
-            <button
-              onClick={(e) => toggleFollow(game.id, e)}
-              className="p-0.5 rounded transition btn-micro"
-              style={{ backgroundColor: followed.includes(game.id) ? 'rgba(255, 158, 0, 0.1)' : 'transparent' }}
-            >
-              <Star
-                size={12}
-                className={followed.includes(game.id) ? 'fill-current' : ''}
-                strokeWidth={1.5}
-                style={{ color: followed.includes(game.id) ? 'var(--accent-2)' : 'var(--muted)' }}
-              />
-            </button>
-          </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '12px 8px' }}>
+          {isLoading && (
+            <p style={{ fontSize: '12px', color: '#666' }}>Loading live games…</p>
+          )}
 
-          {/* Scores - Side by Side Layout */}
-          {game.status === 'UPCOMING' ? (
-            <div className="mb-1.5">
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{game.away.name}</p>
-                <p className="text-xs font-semibold" style={{ color: '#666' }}>{game.time}</p>
-              </div>
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{game.home.name}</p>
-              </div>
-            </div>
-          ) : (
-            <div className="mb-1.5">
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{game.away.name}</p>
-                <p className="text-lg font-bold font-mono-stat" style={{ color: 'var(--text)' }}>{game.away.score}</p>
-              </div>
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{game.home.name}</p>
-                <p className="text-lg font-bold font-mono-stat" style={{ color: 'var(--text)' }}>{game.home.score}</p>
-              </div>
+          {error && !isLoading && (
+            <div
+              style={{
+                padding: '12px',
+                borderRadius: '8px',
+                backgroundColor: '#fff5f5',
+                color: '#b91c1c',
+                fontSize: '12px'
+              }}
+            >
+              {error}
             </div>
           )}
 
-          {/* Actions */}
-          <div className="flex gap-1">
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                handleSelectGame(game)
-              }}
-              className="flex-1 py-1 px-1.5 rounded text-xs font-satoshi-bold transition flex items-center justify-center gap-0.5"
-              style={{ backgroundColor: 'rgba(255, 77, 109, 0.08)', color: 'var(--accent-1)' }}
-            >
-              <ChevronRight size={10} strokeWidth={2} />
-              Stats
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                onAskAI?.(game)
-              }}
-              className="py-1 px-1.5 rounded text-xs transition"
-              style={{ backgroundColor: 'rgba(166, 77, 255, 0.08)', color: 'var(--accent-3)' }}
-            >
-              ✨
-            </button>
-          </div>
-        </div>
-                    ))}
+          {!isLoading && !error && filteredGames.length === 0 && (
+            <p style={{ fontSize: '12px', color: '#666' }}>
+              No games available right now. Try refreshing or check back later.
+            </p>
+          )}
+
+          {filteredGames.map((game) => {
+            const homeTeam = game?.teams?.[0] || {}
+            const awayTeam = game?.teams?.[1] || {}
+            const isFollowed = followed.includes(game.id)
+            const isSelected = selectedGameId === game.id
+
+            return (
+              <div
+                key={game.id}
+                onClick={() => handleSelectGame(game)}
+                style={{
+                  background: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '16px',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
+                  border: isSelected ? '2px solid #FF4D6D' : '1px solid #f1f1f1',
+                  cursor: 'pointer',
+                  transition: 'border 0.2s ease'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <div>
+                    <p style={{ fontSize: '11px', fontWeight: '600', color: '#FF4D6D' }}>
+                      {game.league || game.sport || 'LIVE'}
+                    </p>
+                    <p style={{ fontSize: '12px', color: '#888' }}>{formatStatus(game)}</p>
                   </div>
-                )}
+                  <button
+                    onClick={(e) => toggleFollow(game.id, e)}
+                    style={{
+                      border: 'none',
+                      background: 'transparent',
+                      color: isFollowed ? '#FF4D6D' : '#ccc',
+                      cursor: 'pointer'
+                    }}
+                    aria-label={isFollowed ? 'Unfollow game' : 'Follow game'}
+                  >
+                    <Star size={16} fill={isFollowed ? '#FF4D6D' : 'none'} />
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: '15px', fontWeight: '600', color: '#1A1511' }}>
+                      {formatTeamName(awayTeam, 'Away')}
+                    </p>
+                    <p style={{ fontSize: '24px', fontWeight: '700', color: '#1A1511' }}>
+                      {formatScore(awayTeam)}
+                    </p>
+                  </div>
+                  <div style={{ width: '32px', textAlign: 'center', color: '#999' }}>@</div>
+                  <div style={{ flex: 1, textAlign: 'right' }}>
+                    <p style={{ fontSize: '15px', fontWeight: '600', color: '#1A1511' }}>
+                      {formatTeamName(homeTeam, 'Home')}
+                    </p>
+                    <p style={{ fontSize: '24px', fontWeight: '700', color: '#1A1511' }}>
+                      {formatScore(homeTeam)}
+                    </p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px' }}>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onAskAI?.(
+                        `Give me a quick summary of ${formatTeamName(awayTeam, 'the away team')} vs ${formatTeamName(
+                          homeTeam,
+                          'the home team'
+                        )}`
+                      )
+                    }}
+                    style={{
+                      border: '1px solid #f1f1f1',
+                      background: 'transparent',
+                      borderRadius: '8px',
+                      padding: '6px 10px',
+                      fontSize: '12px',
+                      color: '#1A1511',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Ask AI
+                  </button>
+                  <ChevronRight size={16} color="#999" />
+                </div>
               </div>
             )
           })}

@@ -3,6 +3,7 @@ import Sidebar from './components/Sidebar'
 import ChatWindow from './components/ChatWindow'
 import GameStatsHub from './components/GameStatsHub'
 import './index.css'
+import apiClient from './lib/api'
 
 export default function App() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024)
@@ -63,52 +64,30 @@ export default function App() {
 
   const handleSendMessage = async (text) => {
     const userMessage = { id: Date.now(), text, sender: 'user', context: contextData }
-    setMessages([...messages, userMessage])
+    const isFirstMessage = messages.length === 0
+    setMessages(prev => [...prev, userMessage])
     setIsLoading(true)
-
-    console.log('Sending message to backend:', text)
 
     try {
       const activeConv = conversations.find(c => c.id === activeConversation)
-      const payload = {
-        message: text,
-        ...(activeConv?.backendId && { conversation_id: activeConv.backendId })
-      }
+      const conversationId = activeConv?.backendId ?? null
 
-      console.log('Payload:', payload)
+      const data = await apiClient.sendChatMessage(text, conversationId)
 
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/chat/send`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      })
-
-      console.log('Response status:', response.status)
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-      }
-
-      const data = await response.json()
-      console.log('Response data:', data)
-
-      if (data.error) {
+      if (data?.error) {
         throw new Error(data.error)
       }
 
       const aiMessage = {
         id: Date.now() + 1,
-        text: data.response,
+        text: data?.response ?? 'No response received.',
         sender: 'ai'
       }
       setMessages(prev => [...prev, aiMessage])
 
-      // Update backend conversation ID if new
-      if (data.conversation_id && !activeConv?.backendId) {
-        setConversations(prev => prev.map(c => 
-          c.id === activeConversation 
+      if (data?.conversation_id && data.conversation_id !== activeConv?.backendId) {
+        setConversations(prev => prev.map(c =>
+          c.id === activeConversation
             ? { ...c, backendId: data.conversation_id }
             : c
         ))
@@ -125,14 +104,12 @@ export default function App() {
       setIsLoading(false)
     }
 
-    // Update conversation title if it's the first message
-    if (messages.length === 0) {
-      const updatedConversations = conversations.map(c => 
-        c.id === activeConversation 
+    if (isFirstMessage) {
+      setConversations(prev => prev.map(c =>
+        c.id === activeConversation
           ? { ...c, title: text.substring(0, 30) + (text.length > 30 ? '...' : '') }
           : c
-      )
-      setConversations(updatedConversations)
+      ))
     }
   }
 
