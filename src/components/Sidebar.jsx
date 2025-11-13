@@ -139,6 +139,9 @@ export default function Sidebar({
             )}
           </div>
 
+          {/* Spacer for mobile */}
+          <div className="h-6 lg:h-0"></div>
+
           {/* Footer - Fixed at bottom on mobile */}
           <div className="p-3 border-t lg:relative" style={{ borderColor: 'var(--border)' }}>
             <button className="w-full py-2 px-3 text-xs text-gray-700 hover:bg-gray-100 rounded-md transition font-medium border border-gray-300">
