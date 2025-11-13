@@ -7,7 +7,8 @@
     "build": "bun build src/index.ts --outdir dist",
     "start": "bun run src/index.ts",
     "dev": "bun --watch src/index.ts",
-    "migrate": "bun run src/db/migrate.ts"
+    "migrate": "bun run src/db/migrate.ts",
+    "generate": "drizzle-kit generate:sqlite"
   },
   "dependencies": {
     "drizzle-orm": "^0.30.7",

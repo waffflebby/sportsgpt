@@ -6,6 +6,7 @@ import registerGamesRoutes from "./games";
 import registerPlayersRoutes from "./players";
 
 export function registerRoutes(app: Hono<AppBindings>) {
+  app.get("/health", (c) => c.text("OK"));
   registerChatRoutes(app);
   registerFeedRoutes(app);
   registerGamesRoutes(app);

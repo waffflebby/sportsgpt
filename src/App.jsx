@@ -66,6 +66,8 @@ export default function App() {
     setMessages([...messages, userMessage])
     setIsLoading(true)
 
+    console.log('Sending message to backend:', text)
+
     try {
       const activeConv = conversations.find(c => c.id === activeConversation)
       const payload = {
@@ -73,7 +75,9 @@ export default function App() {
         ...(activeConv?.backendId && { conversation_id: activeConv.backendId })
       }
 
-      const response = await fetch('https://backend-bold-smoke-6218.fly.dev/chat/send', {
+      console.log('Payload:', payload)
+
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/chat/send`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -81,7 +85,14 @@ export default function App() {
         body: JSON.stringify(payload),
       })
 
+      console.log('Response status:', response.status)
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+
       const data = await response.json()
+      console.log('Response data:', data)
 
       if (data.error) {
         throw new Error(data.error)
@@ -103,10 +114,10 @@ export default function App() {
         ))
       }
     } catch (error) {
-      console.error('Chat error:', error)
+      console.error('Chat error details:', error)
       const errorMessage = {
         id: Date.now() + 1,
-        text: 'Sorry, I encountered an error processing your message. Please try again.',
+        text: `Sorry, I encountered an error: ${error.message}. Please try again.`,
         sender: 'ai'
       }
       setMessages(prev => [...prev, errorMessage])

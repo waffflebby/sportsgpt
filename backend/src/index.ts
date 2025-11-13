@@ -14,7 +14,8 @@ const app = new Hono<AppBindings>();
 app.use(cors({
   origin: [
     "http://localhost:5173",
-    "https://sportsgpt.netlify.app"
+    "https://sportsgpt.netlify.app",
+    "https://sports-o83jsfyud-cfawow9-gmailcoms-projects.vercel.app"
   ],
   allowMethods: ["GET", "POST", "OPTIONS"],
   allowHeaders: ["Content-Type", "Authorization"],
@@ -35,6 +36,7 @@ async function bootstrap() {
 
   const port = Number(env.PORT ?? 3000);
   const server = Bun.serve({
+    hostname: "0.0.0.0",
     port,
     fetch: app.fetch
   });

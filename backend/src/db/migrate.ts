@@ -1,11 +1,9 @@
 import { migrate } from "drizzle-orm/bun-sqlite/migrator";
-import { fileURLToPath } from "url";
-import { dirname, join } from "path";
+import { join } from "path";
 import { db } from "./client";
 
 export async function runMigrations() {
-  const currentFile = fileURLToPath(import.meta.url);
-  const migrationsFolder = join(dirname(currentFile), "./migrations");
+  const migrationsFolder = join(process.cwd(), "src/db/migrations");
   await migrate(db, { migrationsFolder });
 }
 

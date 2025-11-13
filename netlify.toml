@@ -2,6 +2,9 @@
   command = "npm run build"
   publish = "dist"
 
+[build.environment]
+  VITE_BACKEND_URL = "https://backend-bold-smoke-6218.fly.dev"
+
 [dev]
   command = "npm run dev"
   port = 3000
