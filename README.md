@@ -90,7 +90,6 @@ sportsgpt/
 │   ├── main.jsx
 │   └── index.css
 ├── contract.yaml              # Codex contract
-├── netlify.toml               # Frontend deploy config (Vercel)
 └── index.html                 # App shell
 
 

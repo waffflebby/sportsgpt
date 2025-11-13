@@ -31,12 +31,20 @@ app.use("*", async (c, next) => {
 registerRoutes(app);
 
 let migrated = false;
+let migratePromise: Promise<void> | null = null;
 async function safeMigrate() {
-  if (migrated) {
-    return;
+  if (migrated) return;
+  if (!migratePromise) {
+    migratePromise = runMigrations()
+      .then(() => {
+        migrated = true;
+      })
+      .catch((error) => {
+        migratePromise = null;
+        throw error;
+      });
   }
-  migrated = true;
-  await runMigrations();
+  await migratePromise;
 }
 
 async function bootstrap() {
