@@ -8,14 +8,28 @@ import { db, services } from "./container";
 import { runMigrations } from "./db/migrate";
 import type { AppBindings } from "./types";
 
+const argv = Array.isArray(Bun.argv) ? Bun.argv : [];
+const procArgv = typeof process !== "undefined" && Array.isArray(process.argv) ? process.argv : [];
+const isSmokeTest = [...new Set([...argv, ...procArgv])].includes("--smoke-test");
+
+const configuredOrigins = (Bun.env.CORS_ORIGINS ?? process.env.CORS_ORIGINS ?? "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const allowedOrigins = Array.from(
+  new Set([
+    "http://localhost:5173",
+    "https://sportsgpt.netlify.app",
+    "https://sports-o83jsfyud-cfawow9-gmailcoms-projects.vercel.app",
+    ...configuredOrigins
+  ])
+);
+
 const app = new Hono<AppBindings>();
 
 app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "https://sportsgpt.netlify.app",
-    "https://sports-o83jsfyud-cfawow9-gmailcoms-projects.vercel.app"
-  ],
+  origin: allowedOrigins,
   allowMethods: ["GET", "POST", "OPTIONS"],
   allowHeaders: ["Content-Type", "Authorization"],
 }));
@@ -60,6 +74,19 @@ async function bootstrap() {
 
   console.log(`Server running on port ${port}`);
   logger.info(`Server listening on http://0.0.0.0:${server.port}`);
+
+  if (isSmokeTest) {
+    try {
+      const response = await fetch(`http://127.0.0.1:${server.port}/health`);
+      if (!response.ok) {
+        throw new Error(`Healthcheck failed with status ${response.status}`);
+      }
+      logger.info("Smoke test healthcheck succeeded");
+    } finally {
+      server.stop();
+    }
+    return;
+  }
 
   services.feed
     .refreshFeed()
