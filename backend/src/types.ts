@@ -1,69 +1,19 @@
-export interface Conversation {
-  id: number
-  title: string
-  created_at: string
-  updated_at: string
-}
+import type { DatabaseClient } from "./db/client";
+import type { services } from "./container";
 
-export interface Message {
-  id: number
-  conversation_id: number
-  role: 'user' | 'assistant' | 'system'
-  content: string
-  created_at: string
-}
+export type Services = typeof services;
 
-export interface FollowedSport {
-  id: number
-  sport: string
-  team_id: number
-  created_at: string
-}
+export type AppBindings = {
+  Bindings: {
+    DATABASE_URL: string;
+    OPENAI_API_KEY: string;
+    SPORTS_API_KEY: string;
+    PORT?: string;
+  };
+  Variables: {
+    db: DatabaseClient;
+    services: Services;
+  };
+};
 
-export interface FeedItem {
-  id: number
-  type: string
-  title: string
-  content: string
-  sport: string
-  created_at: string
-}
-
-export interface Game {
-  id: number
-  home_team: string
-  away_team: string
-  home_score: number
-  away_score: number
-  status: string
-  quarter?: string
-  time?: string
-  start_time: string
-}
-
-export interface PlayerStats {
-  bio: {
-    id: number
-    name: string
-    position: string
-    team: string
-  }
-  season_averages: {
-    points: number
-    rebounds: number
-    assists: number
-    steals: number
-    blocks: number
-  }
-  last_5_games: Array<{
-    date: string
-    opponent: string
-    points: number
-    rebounds: number
-    assists: number
-  }>
-}
-
-export interface App {
-  // Add any app-specific types here
-}
+export type AppContext = import("hono").Context<AppBindings>;

@@ -1,41 +1,60 @@
-import { Elysia } from 'elysia'
-import { cors } from '@elysiajs/cors'
-import { chatRoutes } from './routes/chat'
-import { gamesRoutes } from './routes/games'
-import { playersRoutes } from './routes/players'
-import { feedRoutes } from './routes/feed'
-import { initDatabase } from './database/init'
+import { Hono } from "hono";
+import { logger } from "./utils/logger";
+import { loggingMiddleware } from "./middleware/logging";
+import { errorHandler } from "./middleware/errorHandler";
+import { registerRoutes } from "./routes";
+import { db, services } from "./container";
+import { runMigrations } from "./db/migrate";
+import { env } from "./utils/env";
+import type { AppBindings } from "./types";
 
-import 'dotenv/config'
+const app = new Hono<AppBindings>();
 
-// Initialize database
-initDatabase()
+app.use("*", errorHandler);
+app.use("*", loggingMiddleware);
+app.use("*", async (c, next) => {
+  c.set("db", db);
+  c.set("services", services);
+  await next();
+});
 
-const app = new Elysia()
-  .use(cors({
-    origin: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-  }))
-  .use(chatRoutes)
-  .use(gamesRoutes)
-  .use(playersRoutes)
-  .use(feedRoutes)
-  .get('/', () => ({
-    message: 'SportsGPT Backend API',
-    version: '1.0.0',
-    endpoints: [
-      '/chat/send',
-      '/games/live',
-      '/games/:gameId/stats',
-      '/games/:teamId/logs',
-      '/players/:playerId/stats',
-      '/feed',
-      '/feed/refresh'
-    ]
-  }))
-  .listen(process.env.PORT || 3001)
+registerRoutes(app);
 
-console.log(`🚀 SportsGPT Backend running on port ${process.env.PORT || 3001}`)
+async function bootstrap() {
+  await runMigrations();
 
-export type { App } from './types'
+  const port = Number(env.PORT ?? 3000);
+  const server = Bun.serve({
+    port,
+    fetch: app.fetch
+  });
+
+  logger.info(`Server listening on http://localhost:${server.port}`);
+
+  services.feed
+    .refreshFeed()
+    .then((count) => {
+      if (count > 0) {
+        logger.info("Initial feed seeded", { inserted: count });
+      }
+    })
+    .catch((error) => logger.error("Initial feed refresh failed", error));
+
+  setInterval(() => {
+    services.feed
+      .refreshFeed()
+      .then((count) => {
+        if (count > 0) {
+          logger.info("Background feed refresh", { inserted: count });
+        }
+      })
+      .catch((error) => logger.error("Feed refresh failed", error));
+  }, 20_000);
+}
+
+bootstrap().catch((error) => {
+  logger.error("Failed to start server", error);
+  process.exit(1);
+});
+
+export default app;

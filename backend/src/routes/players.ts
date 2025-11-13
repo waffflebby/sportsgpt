@@ -1,40 +1,23 @@
-import { Elysia, t } from 'elysia'
-import { getPlayerStats } from '../services/apiSports'
+import type { Hono } from "hono";
+import { HTTPException } from "hono/http-exception";
+import { z } from "zod";
+import type { AppBindings } from "../types";
 
-export const playersRoutes = new Elysia({ prefix: '/players' })
-  .get('/:playerId/stats', async ({ params }) => {
-    const { playerId } = params
+const playerIdParamSchema = z.object({
+  player_id: z.string()
+});
 
-    try {
-      // Try NBA first
-      let stats = await getPlayerStats(parseInt(playerId), 'nba')
+export default function registerPlayerRoutes(app: Hono<AppBindings>) {
+  app.get("/players/:player_id/stats", async (c) => {
+    const params = playerIdParamSchema.parse(c.req.param());
+    const playerId = Number(params.player_id);
 
-      // If not found, try NFL
-      if (!stats) {
-        stats = await getPlayerStats(parseInt(playerId), 'nfl')
-      }
-
-      if (!stats) {
-        return {
-          error: 'Player not found',
-          bio: null,
-          season_averages: null,
-          last_5_games: []
-        }
-      }
-
-      return stats
-    } catch (error) {
-      console.error('Player stats error:', error)
-      return {
-        error: 'Failed to fetch player stats',
-        bio: null,
-        season_averages: null,
-        last_5_games: []
-      }
+    if (Number.isNaN(playerId)) {
+      throw new HTTPException(400, { message: "Invalid player_id" });
     }
-  }, {
-    params: t.Object({
-      playerId: t.String()
-    })
-  })
+
+    const services = c.get("services");
+    const data = await services.players.getPlayerStats(playerId);
+    return c.json(data);
+  });
+}
