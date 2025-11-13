@@ -13,7 +13,7 @@ export default function App() {
   const [selectedSport, setSelectedSport] = useState('all')
   const [selectedGame, setSelectedGame] = useState('all')
   const [conversations, setConversations] = useState([
-    { id: 1, title: 'New chat', active: true }
+    { id: 1, title: 'New chat', active: true, backendId: null }
   ])
   const [messages, setMessages] = useState([])
   const [activeConversation, setActiveConversation] = useState(1)
@@ -36,7 +36,7 @@ export default function App() {
   const handleNewChat = () => {
     const newId = Math.max(...conversations.map(c => c.id), 0) + 1
     const updatedConversations = conversations.map(c => ({ ...c, active: false }))
-    setConversations([...updatedConversations, { id: newId, title: 'New chat', active: true }])
+    setConversations([...updatedConversations, { id: newId, title: 'New chat', active: true, backendId: null }])
     setActiveConversation(newId)
     setMessages([])
     setContextData(null)
@@ -61,23 +61,58 @@ export default function App() {
     }
   }
 
-  const handleSendMessage = (text) => {
+  const handleSendMessage = async (text) => {
     const userMessage = { id: Date.now(), text, sender: 'user', context: contextData }
     setMessages([...messages, userMessage])
     setIsLoading(true)
 
-    // Simulate AI response with thinking time
-    setTimeout(() => {
+    try {
+      const activeConv = conversations.find(c => c.id === activeConversation)
+      const payload = {
+        message: text,
+        ...(activeConv?.backendId && { conversation_id: activeConv.backendId })
+      }
+
+      const response = await fetch('https://backend-bold-smoke-6218.fly.dev/chat/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      })
+
+      const data = await response.json()
+
+      if (data.error) {
+        throw new Error(data.error)
+      }
+
       const aiMessage = {
         id: Date.now() + 1,
-        text: contextData 
-          ? `Based on ${contextData.title}, here's what I found:\n\nThe data shows strong performance metrics across key categories. Player efficiency ratings are trending upward, with notable improvements in shooting percentage and defensive positioning.\n\nKey takeaways:\n• Consistent scoring output in clutch situations\n• Improved team chemistry and ball movement\n• Defensive adjustments showing positive results\n\nWould you like me to dive deeper into any specific aspect?`
-          : `I can help you analyze sports data, player stats, and game insights. Try asking about:\n\n• Player performance and comparisons\n• Team statistics and trends\n• Game predictions and analysis\n• Historical matchup data\n\nWhat would you like to know?`,
+        text: data.response,
         sender: 'ai'
       }
       setMessages(prev => [...prev, aiMessage])
+
+      // Update backend conversation ID if new
+      if (data.conversation_id && !activeConv?.backendId) {
+        setConversations(prev => prev.map(c => 
+          c.id === activeConversation 
+            ? { ...c, backendId: data.conversation_id }
+            : c
+        ))
+      }
+    } catch (error) {
+      console.error('Chat error:', error)
+      const errorMessage = {
+        id: Date.now() + 1,
+        text: 'Sorry, I encountered an error processing your message. Please try again.',
+        sender: 'ai'
+      }
+      setMessages(prev => [...prev, errorMessage])
+    } finally {
       setIsLoading(false)
-    }, 2000)
+    }
 
     // Update conversation title if it's the first message
     if (messages.length === 0) {

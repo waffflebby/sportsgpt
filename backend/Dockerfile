@@ -10,12 +10,9 @@ RUN mkdir -p /data
 COPY package.json tsconfig.json ./
 RUN bun install
 
-COPY drizzle.config.ts ./drizzle.config.ts
-COPY src ./src
-
-RUN bun run build
+COPY . ./
 
 VOLUME ["/data"]
 EXPOSE 3000
 
-CMD ["bun", "run", "start"]
+CMD ["bun", "run", "src/index.ts"]

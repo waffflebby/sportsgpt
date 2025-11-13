@@ -19,7 +19,8 @@ API Contract: contract.yaml (Codex-generated)
 Deployment Ready: Netlify (frontend), Fly.io (backend)
 
 
-Right now, the backend API exists but is not yet hooked into the frontend — this README reflects the current checkpoint.
+
+✅ Fully Connected & Deployed: Frontend talks to backend for AI responses. Backend deployed on Fly.io.
 
 🚀 Features (Current)
 ✅ Frontend (completed)
@@ -52,22 +53,25 @@ Bun + Elysia server
 SQLite persistence
 
 
-API routes scaffolded (/api/analyze, /api/stats, etc.)
+API routes scaffolded (/chat/send, /feed, /games, /players)
 
 
-Ready for OpenAI integration (not connected yet)
+OpenAI GPT-4o-mini integration
 
 
-🟡 Not Done Yet (upcoming)
+API-Sports.io for live sports data
 
 
-Connect frontend → backend
+✅ Deployment (completed)
 
 
-Add real OpenAI responses
+Frontend: Netlify
 
 
-Pull live sports stats and feed them into chat
+Backend: Fly.io with persistent SQLite volume
+
+
+Secrets: OpenAI & Sports API keys set
 
 
 Optional: charts, PWA, extra models (not required)

@@ -35,7 +35,7 @@ export default function Sidebar({
 
       {/* Sidebar */}
       <div className={`
-        fixed lg:relative w-[70%] max-w-sm h-screen bg-white
+        fixed lg:relative w-[70%] max-w-64 h-screen bg-white
         transition-transform duration-300 z-40 lg:z-0
         ${open ? 'translate-x-0' : '-translate-x-full'}
         flex flex-col border-r
