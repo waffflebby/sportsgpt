@@ -10,7 +10,7 @@ The project includes:
 Frontend: React + Vite + Tailwind (ChatGPT-style UI)
 
 
-Backend: Bun + Elysia.js + SQLite
+Backend: Bun + Elysia.js + SQLite (Deployed: https://backend-bold-smoke-6218.fly.dev/)
 
 
 API Contract: contract.yaml (Codex-generated)
