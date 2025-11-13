@@ -61,8 +61,6 @@ async function safeMigrate() {
 }
 
 async function bootstrap() {
-  await safeMigrate();
-
   const port = Number(Bun.env.PORT) || 8080;
   console.log("Starting server on port:", port);
   const server = Bun.serve({
