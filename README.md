@@ -1,68 +1,146 @@
-# ChatGPT Clone - Light Mode Frontend
+🏀 SportsGPT — AI-Powered Sports Chat App
+A frontend ChatGPT-style UI + a Bun/Elysia backend ready to pull real sports data.
+📌 Overview
+SportsGPT is a lightweight chat interface where users can talk about sports, view stats, and get clean sports information.
+The project includes:
 
-A modern, responsive ChatGPT clone frontend built with React, TailwindCSS, and Vite.
 
-## Features
+Frontend: React + Vite + Tailwind (ChatGPT-style UI)
 
-- ✨ Clean light mode design
-- 💬 Chat interface with message history
-- 📱 Fully responsive (mobile & desktop)
-- 🎨 Modern UI with smooth animations
-- 🗂️ Conversation management (create, select, delete)
-- ⌨️ Auto-expanding textarea input
-- 📋 Copy message functionality
-- 👍 Message feedback buttons
 
-## Getting Started
+Backend: Bun + Elysia.js + SQLite
 
-### Prerequisites
-- Node.js 16+ and npm
 
-### Installation
+API Contract: contract.yaml (Codex-generated)
 
-1. Install dependencies:
-```bash
+
+Deployment Ready: Netlify (frontend), Fly.io (backend)
+
+
+Right now, the backend API exists but is not yet hooked into the frontend — this README reflects the current checkpoint.
+
+🚀 Features (Current)
+✅ Frontend (completed)
+
+
+Clean ChatGPT-style interface
+
+
+Light mode UI
+
+
+Conversation list
+
+
+Auto-expanding input
+
+
+Copy message button
+
+
+Fully responsive
+
+
+✅ Backend (completed)
+
+
+Bun + Elysia server
+
+
+SQLite persistence
+
+
+API routes scaffolded (/api/analyze, /api/stats, etc.)
+
+
+Ready for OpenAI integration (not connected yet)
+
+
+🟡 Not Done Yet (upcoming)
+
+
+Connect frontend → backend
+
+
+Add real OpenAI responses
+
+
+Pull live sports stats and feed them into chat
+
+
+Optional: charts, PWA, extra models (not required)
+
+
+
+📁 Project Structure
+sportsgpt/
+├── backend/
+│   ├── index.ts               # Bun + Elysia API server
+│   ├── db.sqlite              # SQLite storage (Fly volume)
+│   └── routes/…               # API endpoints
+├── src/
+│   ├── components/            # Chat UI pieces
+│   ├── App.jsx
+│   ├── main.jsx
+│   └── index.css
+├── contract.yaml              # Codex contract
+├── netlify.toml               # Frontend deploy config
+└── index.html                 # App shell
+
+
+🛠️ Getting Started
+🔧 Frontend
+Install:
 npm install
-```
 
-2. Start the development server:
-```bash
+Run dev:
 npm run dev
-```
 
-The app will open at `http://localhost:3000`
-
-### Build for Production
-
-```bash
+Build:
 npm run build
-```
 
-Output will be in the `dist` folder.
 
-## Project Structure
+🔧 Backend (Bun API)
+Install deps:
+bun install
 
-```
-src/
-├── components/
-│   ├── Sidebar.jsx       # Left sidebar with conversations
-│   ├── ChatWindow.jsx    # Main chat area
-│   ├── MessageList.jsx   # Message display
-│   └── InputArea.jsx     # Message input
-├── App.jsx               # Main app component
-├── main.jsx              # Entry point
-└── index.css             # Global styles
-```
+Run API:
+bun run index.ts
 
-## Technologies
 
-- **React 18** - UI library
-- **Vite** - Build tool
-- **TailwindCSS** - Styling
-- **Lucide React** - Icons
+🔌 Connecting Frontend → Backend (Not Done Yet)
+You will eventually modify:
+src/App.jsx
+Inside:
+handleSendMessage()
 
-## Notes
+To call:
+POST http://localhost:3000/api/analyze
 
-- This is a frontend-only implementation
-- Messages are simulated with demo responses
-- To connect to a real API, modify the `handleSendMessage` function in `App.jsx`
+Not implemented yet.
+This is the next step.
+
+📡 Sports Data
+The backend is already structured so you can fetch stats and pass them into the chat response once OpenAI is wired in.
+Nothing to do yet — just future-ready.
+
+📦 Deployment
+Frontend → Netlify
+Auto-build using Vite.
+Backend → Fly.io
+SQLite volume already configured in /backend.
+
+📍 Current Checkpoint Summary
+✔ UI works
+✔ Backend server works
+✔ API exists
+✔ Ready for OpenAI key
+❌ Frontend not connected to backend
+❌ No real sports stats responses yet
+
+
+
+Add a Netlify button
+
+
+Just tell me.
