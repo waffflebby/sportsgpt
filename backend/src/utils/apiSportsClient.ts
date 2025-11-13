@@ -70,19 +70,53 @@ export class ApiSportsClient {
 
   async getLiveGames(): Promise<LiveGame[]> {
     try {
-      const [nba, nfl] = await Promise.allSettled([
+      const today = new Date();
+      const weekAgo = new Date(today);
+      weekAgo.setDate(today.getDate() - 7);
+      const weekAhead = new Date(today);
+      weekAhead.setDate(today.getDate() + 7);
+
+      const formatDate = (date: Date) => date.toISOString().split('T')[0];
+      const [nbaLive, nflLive, nbaRecent, nflRecent, nbaUpcoming, nflUpcoming] = await Promise.allSettled([
         this.request("/games?live=all", { sport: "nba" }),
-        this.request("/games?live=all", { sport: "nfl" })
+        this.request("/games?live=all", { sport: "nfl" }),
+        // Recent games (last 7 days)
+        this.request(`/games?date=${formatDate(weekAgo)}&date=${formatDate(today)}`, { sport: "nba" }),
+        this.request(`/games?date=${formatDate(weekAgo)}&date=${formatDate(today)}`, { sport: "nfl" }),
+        // Upcoming games (next 7 days)
+        this.request(`/games?date=${formatDate(today)}&date=${formatDate(weekAhead)}`, { sport: "nba" }),
+        this.request(`/games?date=${formatDate(today)}&date=${formatDate(weekAhead)}`, { sport: "nfl" })
       ]);
 
-      const nbaGames = nba.status === 'fulfilled' ? (nba.value?.response || []) : [];
-      const nflGames = nfl.status === 'fulfilled' ? (nfl.value?.response || []) : [];
+      const extractGames = (result: PromiseSettledResult<any>) => 
+        result.status === 'fulfilled' ? (result.value?.response || []) : [];
 
-      console.log(`Fetched ${Array.isArray(nbaGames) ? nbaGames.length : 0} NBA games`);
-      console.log(`Fetched ${Array.isArray(nflGames) ? nflGames.length : 0} NFL games`);
+      const allNbaGames = [
+        ...extractGames(nbaLive),
+        ...extractGames(nbaRecent),
+        ...extractGames(nbaUpcoming)
+      ];
 
-      const normalize = (games: any[], sport: string) =>
-        games.map((game) => {
+      const allNflGames = [
+        ...extractGames(nflLive),
+        ...extractGames(nflRecent),
+        ...extractGames(nflUpcoming)
+      ];
+
+      console.log(`Fetched ${allNbaGames.length} total NBA games (past 7 days + upcoming)`);
+      console.log(`Fetched ${allNflGames.length} total NFL games (past 7 days + upcoming)`);
+
+      const normalize = (games: any[], sport: string) => {
+        // Remove duplicates by ID
+        const uniqueGames = games.filter((game, index, self) => 
+          index === self.findIndex((g) => {
+            const id1 = g.id ?? g.game?.id ?? g.fixture?.id;
+            const id2 = game.id ?? game.game?.id ?? game.fixture?.id;
+            return id1 === id2;
+          })
+        );
+
+        return uniqueGames.map((game) => {
           const idSource =
             game.id ??
             game.game?.id ??
@@ -110,17 +144,18 @@ export class ApiSportsClient {
               null
           };
         });
+      };
 
       const allGames = [
-        ...normalize((nbaGames as any[]) || [], "NBA"),
-        ...normalize((nflGames as any[]) || [], "NFL")
+        ...normalize(allNbaGames, "NBA"),
+        ...normalize(allNflGames, "NFL")
       ].sort((a, b) => {
         const aTime = a.scheduled ? Date.parse(a.scheduled) : 0;
         const bTime = b.scheduled ? Date.parse(b.scheduled) : 0;
-        return bTime - aTime;
+        return bTime - aTime; // Most recent first
       });
 
-      console.log(`Returning ${allGames.length} normalized games`);
+      console.log(`Returning ${allGames.length} total normalized games`);
       return allGames;
 
     } catch (error) {
