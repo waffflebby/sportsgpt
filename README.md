@@ -1,3 +1,5 @@
+Live Demo: https://replika-sports.netlify.app
+
 🏀 SportsGPT — AI-Powered Sports Chat App
 A frontend ChatGPT-style UI + a Bun/Elysia backend ready to pull real sports data.
 📌 Overview
