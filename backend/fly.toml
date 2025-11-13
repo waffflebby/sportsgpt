@@ -9,10 +9,10 @@ primary_region = 'iad'
 [build]
 
 [env]
-  PORT = "8080"
+  PORT = "3000"
 
 [[services]]
-  internal_port = 8080
+  internal_port = 3000
   processes = ["app"]
   protocol = "tcp"
   force_https = true
