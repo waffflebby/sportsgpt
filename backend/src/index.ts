@@ -20,8 +20,7 @@ const configuredOrigins = (Bun.env.CORS_ORIGINS ?? process.env.CORS_ORIGINS ?? "
 const allowedOrigins = Array.from(
   new Set([
     "http://localhost:5173",
-    "https://sportsgpt.netlify.app",
-    "https://sports-o83jsfyud-cfawow9-gmailcoms-projects.vercel.app",
+    "https://sports-gpt-gamma.vercel.app",
     ...configuredOrigins
   ])
 );
