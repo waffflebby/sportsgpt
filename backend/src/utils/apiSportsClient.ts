@@ -34,11 +34,9 @@ const BASE_URLS = {
 export class ApiSportsClient {
   constructor(private apiKey: string) {}
 
-  private headers(baseUrl: string) {
-    const host = new URL(baseUrl).host;
+  private headers() {
     return {
-      "x-rapidapi-key": this.apiKey,
-      "x-rapidapi-host": host
+      "x-apisports-key": this.apiKey
     };
   }
 
@@ -53,7 +51,7 @@ export class ApiSportsClient {
   private async request(path: string, options?: FetchOptions) {
     const baseUrl = this.resolveBaseUrl(options?.sport);
     const response = await fetch(`${baseUrl}${path}`, {
-      headers: this.headers(baseUrl)
+      headers: this.headers()
     });
 
     if (!response.ok) {
