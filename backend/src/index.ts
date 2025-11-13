@@ -6,7 +6,6 @@ import { errorHandler } from "./middleware/errorHandler";
 import { registerRoutes } from "./routes";
 import { db, services } from "./container";
 import { runMigrations } from "./db/migrate";
-import { env } from "./utils/env";
 import type { AppBindings } from "./types";
 
 const app = new Hono<AppBindings>();
@@ -31,17 +30,27 @@ app.use("*", async (c, next) => {
 
 registerRoutes(app);
 
-async function bootstrap() {
+let migrated = false;
+async function safeMigrate() {
+  if (migrated) {
+    return;
+  }
+  migrated = true;
   await runMigrations();
+}
 
-  const port = Number(env.PORT ?? 3000);
+async function bootstrap() {
+  await safeMigrate();
+
+  const port = Number(process.env.PORT ?? 3000);
   const server = Bun.serve({
-    hostname: "0.0.0.0",
     port,
+    hostname: "0.0.0.0",
     fetch: app.fetch
   });
 
-  logger.info(`Server listening on http://localhost:${server.port}`);
+  console.log(`Server running on port ${port}`);
+  logger.info(`Server listening on http://0.0.0.0:${server.port}`);
 
   services.feed
     .refreshFeed()
