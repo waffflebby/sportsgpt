@@ -1,0 +1,161 @@
+version: 1.0
+name: sportsgpt-backend
+description: Backend for SportsGPT – AI-driven sports analysis, live stats, player data, game logs, and activity feed.
+
+services:
+  ai:
+    provider: openai
+    model: "gpt-4o-mini"   # cheap + fast
+    temperature: 0.3
+
+integrations:
+  api_sports:
+    base_url: "https://v1.basketball.api-sports.io"
+    nfl_url: "https://v1.american-football.api-sports.io"
+    headers:
+      - "x-rapidapi-key: ${API_SPORTS_KEY}"
+      - "x-rapidapi-host: api-sports.io"
+
+database:
+  engine: sqlite
+  file: "./db.sqlite"
+  tables:
+
+    - name: conversations
+      columns:
+        - { name: id, type: integer, primary: true }
+        - { name: title, type: text }
+        - { name: created_at, type: datetime }
+        - { name: updated_at, type: datetime }
+
+    - name: messages
+      columns:
+        - { name: id, type: integer, primary: true }
+        - { name: conversation_id, type: integer, foreign_key: conversations.id }
+        - { name: role, type: text } # user / assistant / system
+        - { name: content, type: text }
+        - { name: created_at, type: datetime }
+
+    - name: followed_sports
+      columns:
+        - { name: id, type: integer, primary: true }
+        - { name: sport, type: text }
+        - { name: team_id, type: integer }
+        - { name: created_at, type: datetime }
+
+    - name: feed_items
+      columns:
+        - { name: id, type: integer, primary: true }
+        - { name: type, type: text } # "game_update", "injury", "analysis"
+        - { name: title, type: text }
+        - { name: content, type: text }
+        - { name: sport, type: text }
+        - { name: created_at, type: datetime }
+
+endpoints:
+
+  # Chat --------------------------------------------------------------
+  - path: /chat/send
+    method: POST
+    description: Send a chat message and get AI response.
+    input:
+      conversation_id: integer
+      message: string
+    output:
+      response: string
+      conversation_id: integer
+    handler: |
+      Save incoming user message → messages table.
+      Send entire conversation history to OpenAI 40-mini.
+      Save assistant message.
+      Return AI response.
+
+  # Games -------------------------------------------------------------
+  - path: /games/live
+    method: GET
+    description: Fetch live NBA & NFL games.
+    input: {}
+    output:
+      games: list
+    handler: |
+      Call API-Sports basketball /games?live=all.
+      Call API-Sports NFL /games?live=all.
+      Normalize output:
+        id, home_team, away_team, scores, status, quarter/time.
+      Return combined live list sorted by start time.
+
+  - path: /games/{game_id}/stats
+    method: GET
+    description: Fetch detailed stats for a game.
+    input:
+      game_id: number
+    output:
+      game: object
+      player_stats: list
+    handler: |
+      Fetch game stats from API-Sports.
+      Combine:
+        - basic scores
+        - play-by-play if available
+        - player box scores
+      Cache for 15 seconds.
+
+  - path: /games/{team_id}/logs
+    method: GET
+    description: Full game logs for a team.
+    input:
+      team_id: integer
+    output:
+      logs: list
+    handler: |
+      Call API-Sports "games" endpoint for past 10 games.
+      Return sorted by date descending.
+
+  # Players -----------------------------------------------------------
+  - path: /players/{player_id}/stats
+    method: GET
+    description: Player season averages + recent performance.
+    input:
+      player_id: integer
+    output:
+      bio: object
+      season_averages: object
+      last_5_games: list
+    handler: |
+      Call API-Sports players & player-stats endpoints.
+
+  # Feed --------------------------------------------------------------
+  - path: /feed
+    method: GET
+    description: Combined activity feed.
+    input: {}
+    output:
+      items: list
+    handler: |
+      Query feed_items table. Return most recent 50.
+
+  - path: /feed/refresh
+    method: POST
+    description: Refresh feed with new events.
+    input: {}
+    output:
+      added_items: number
+    handler: |
+      Fetch live games.
+      For each:
+        Detect score changes, injuries, momentum swings.
+        Summaries created using OpenAI 40-mini.
+        Insert into feed_items.
+
+jobs:
+  - name: refresh_live_feed
+    schedule: "*/20 * * * * *" # every 20 seconds
+    handler: |
+      Same logic as /feed/refresh.
+      Insert new feed items if something changes.
+
+env:
+  required:
+    - API_SPORTS_KEY
+    - OPENAI_API_KEY
+    - PORT
