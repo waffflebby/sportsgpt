@@ -9,8 +9,11 @@ class ApiClient {
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`
     const config = {
+      mode: 'cors',
+      credentials: 'omit',
       headers: {
         'Content-Type': 'application/json',
+        Accept: 'application/json',
         ...options.headers
       },
       ...options
