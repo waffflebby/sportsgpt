@@ -6,7 +6,6 @@ import { errorHandler } from "./middleware/errorHandler";
 import { registerRoutes } from "./routes";
 import { db, services } from "./container";
 import { runMigrations } from "./db/migrate";
-import { env } from "./utils/env";
 import type { AppBindings } from "./types";
 
 const app = new Hono<AppBindings>();
@@ -34,7 +33,7 @@ registerRoutes(app);
 async function bootstrap() {
   await runMigrations();
 
-  const port = Number(env.PORT ?? 3000);
+  const port = Number(process.env.PORT) || 8080;
   const server = Bun.serve({
     hostname: "0.0.0.0",
     port,
