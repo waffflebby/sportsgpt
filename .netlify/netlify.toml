@@ -4,19 +4,20 @@ headers = []
 
 [dev]
 command = "npm run dev"
-port = 3000.0
+port = 5173
 
 [functions]
 
 [functions."*"]
 
 [build]
-publish = "/Users/carlos/CascadeProjects/chatgpt-clone/dist"
+publish = "dist"
 publishOrigin = "config"
 commandOrigin = "config"
 command = "npm run build"
 
 [build.environment]
+  VITE_API_BASE_URL = "https://backend-bold-smoke-6218.fly.dev"
 
 [build.processing]
 
