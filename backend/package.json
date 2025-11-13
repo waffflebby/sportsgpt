@@ -1,0 +1,21 @@
+{
+  "name": "sports-gpt-backend",
+  "version": "1.0.0",
+  "description": "Backend for SportsGPT – AI-driven sports analysis, live stats, player data, game logs, and activity feed.",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --hot src/index.ts",
+    "start": "bun run src/index.ts",
+    "build": "bun build src/index.ts --outdir dist"
+  },
+  "dependencies": {
+    "elysia": "^1.0.0",
+    "better-sqlite3": "^9.4.3",
+    "dotenv": "^16.3.1",
+    "openai": "^4.28.4"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.9",
+    "bun-types": "^1.0.0"
+  }
+}
