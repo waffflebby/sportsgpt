@@ -10,6 +10,7 @@ primary_region = 'iad'
 
 [env]
   PORT = "3000"
+  DATABASE_URL = "/data/sqlite.db"
 
 [[services]]
   internal_port = 3000
