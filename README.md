@@ -1,7 +1,7 @@
-Live Demo: https://replika-sports.netlify.app
+Live Demo: https://sports-jeuqnzdfs-cfawow9-gmailcoms-projects.vercel.app
 
 🏀 SportsGPT — AI-Powered Sports Chat App
-A frontend ChatGPT-style UI + a Bun/Elysia backend ready to pull real sports data.
+A frontend ChatGPT-style UI + a Bun/Hono backend ready to pull real sports data.
 📌 Overview
 SportsGPT is a lightweight chat interface where users can talk about sports, view stats, and get clean sports information.
 The project includes:
@@ -10,17 +10,17 @@ The project includes:
 Frontend: React + Vite + Tailwind (ChatGPT-style UI)
 
 
-Backend: Bun + Elysia.js + SQLite (Deployed: https://backend-bold-smoke-6218.fly.dev/)
+Backend: Bun + Hono + SQLite (deployed on https://backend-bold-smoke-6218.fly.dev/)
 
 
 API Contract: contract.yaml (Codex-generated)
 
 
-Deployment Ready: Netlify (frontend), Fly.io (backend)
+Deployment Ready: Vercel (frontend), Fly.io (backend)
 
 
 
-✅ Fully Connected & Deployed: Frontend talks to backend for AI responses. Backend deployed on Fly.io.
+⚠️ Pending: Frontend needs the production API URL and healthy Fly deployment to communicate with the backend.
 
 🚀 Features (Current)
 ✅ Frontend (completed)
@@ -47,7 +47,7 @@ Fully responsive
 ✅ Backend (completed)
 
 
-Bun + Elysia server
+Bun + Hono server
 
 
 SQLite persistence
@@ -65,10 +65,10 @@ API-Sports.io for live sports data
 ✅ Deployment (completed)
 
 
-Frontend: Netlify
+Frontend: Vercel
 
 
-Backend: Fly.io with persistent SQLite volume
+Backend: Fly.io (remember to mount a volume at /data and run migrations via release command)
 
 
 Secrets: OpenAI & Sports API keys set
@@ -81,7 +81,7 @@ Optional: charts, PWA, extra models (not required)
 📁 Project Structure
 sportsgpt/
 ├── backend/
-│   ├── index.ts               # Bun + Elysia API server
+│   ├── index.ts               # Bun + Hono API server
 │   ├── db.sqlite              # SQLite storage (Fly volume)
 │   └── routes/…               # API endpoints
 ├── src/
@@ -90,7 +90,7 @@ sportsgpt/
 │   ├── main.jsx
 │   └── index.css
 ├── contract.yaml              # Codex contract
-├── netlify.toml               # Frontend deploy config
+├── netlify.toml               # Frontend deploy config (Vercel)
 └── index.html                 # App shell
 
 
@@ -131,10 +131,10 @@ The backend is already structured so you can fetch stats and pass them into the 
 Nothing to do yet — just future-ready.
 
 📦 Deployment
-Frontend → Netlify
+Frontend → Vercel
 Auto-build using Vite.
 Backend → Fly.io
-SQLite volume already configured in /backend.
+(remember to mount a volume at /data and run migrations via release command).
 
 📍 Current Checkpoint Summary
 ✔ UI works

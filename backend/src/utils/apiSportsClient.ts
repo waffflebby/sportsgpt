@@ -34,10 +34,11 @@ const BASE_URLS = {
 export class ApiSportsClient {
   constructor(private apiKey: string) {}
 
-  private headers() {
+  private headers(baseUrl: string) {
+    const host = new URL(baseUrl).host;
     return {
       "x-rapidapi-key": this.apiKey,
-      "x-rapidapi-host": "api-sports.io"
+      "x-rapidapi-host": host
     };
   }
 
@@ -52,7 +53,7 @@ export class ApiSportsClient {
   private async request(path: string, options?: FetchOptions) {
     const baseUrl = this.resolveBaseUrl(options?.sport);
     const response = await fetch(`${baseUrl}${path}`, {
-      headers: this.headers()
+      headers: this.headers(baseUrl)
     });
 
     if (!response.ok) {
@@ -130,8 +131,8 @@ export class ApiSportsClient {
     });
 
     const games = (((result as any).response ?? []) as TeamLog[]).sort((a, b) => {
-      const aDate = a.date?.start ?? a.date ?? "";
-      const bDate = b.date?.start ?? b.date ?? "";
+      const aDate = typeof a.date === 'string' ? a.date : a.date?.start ?? "";
+      const bDate = typeof b.date === 'string' ? b.date : b.date?.start ?? "";
       return Date.parse(bDate) - Date.parse(aDate);
     });
 
