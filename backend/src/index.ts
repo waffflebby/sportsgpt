@@ -105,36 +105,3 @@ export default {
   }
 };
 
-// Run migrations when executed directly (for CI smoke tests)
-if (import.meta.main) {
-  const isSmokeTest = process.argv.includes("--smoke-test");
-  
-  if (!isSmokeTest) {
-    logger.info("Running migrations manually...");
-    await runMigrations();
-    logger.info("Migrations complete");
-    process.exit(0);
-  } else {
-    // Smoke test: start server, hit /health, exit
-    const port = Number(Bun.env.PORT ?? process.env.PORT ?? 3000);
-    const server = Bun.serve({
-      port,
-      hostname: "127.0.0.1",
-      fetch: app.fetch
-    });
-
-    try {
-      const response = await fetch(`http://127.0.0.1:${server.port}/health`);
-      if (!response.ok) {
-        throw new Error(`Healthcheck failed with status ${response.status}`);
-      }
-      logger.info("Smoke test healthcheck succeeded");
-      process.exit(0);
-    } catch (error) {
-      logger.error("Smoke test failed", error);
-      process.exit(1);
-    } finally {
-      server.stop();
-    }
-  }
-}
