@@ -1,90 +1,60 @@
-import React, { useState } from 'react'
-import { Heart, MessageCircle } from 'lucide-react'
+import React, { useMemo, useState } from 'react'
+import { Heart, MessageCircle, RefreshCw } from 'lucide-react'
 
-export default function FeedTab({ onAskAI }) {
+function normaliseSport(value) {
+  if (!value) return 'all'
+  return value.toString().toLowerCase()
+}
+
+function extractGame(item) {
+  return (
+    item.game ||
+    item.matchup ||
+    item.title ||
+    `${item.away_team?.name || item.away_team || 'Away'} @ ${item.home_team?.name || item.home_team || 'Home'}`
+  )
+}
+
+export default function FeedTab({ items = [], isLoading = false, error = null, onAskAI, onRefresh }) {
   const [likes, setLikes] = useState({})
   const [selectedSport, setSelectedSport] = useState('all')
   const [selectedGame, setSelectedGame] = useState('all')
 
-  const feedItems = [
-    {
-      id: 1,
-      game: '49ers @ Cowboys',
-      sport: 'nfl',
-      status: 'LIVE • Q3 10:42',
-      player: 'Christian McCaffrey',
-      play: 'Receiving TD',
-      stats: '45 receiving yards, 1 TD',
-      comments: [
-        { author: '@DeeSports', text: 'Elite receiving back' },
-        { author: '@Jules', text: 'Best RB in the league' }
-      ],
-      likes: 14
-    },
-    {
-      id: 2,
-      game: 'Lakers vs Celtics',
-      sport: 'nba',
-      status: 'LIVE • Q3 5:42',
-      player: 'LeBron James',
-      play: '3-Pointer',
-      stats: '28 points, 8 rebounds, 6 assists',
-      comments: [
-        { author: '@HoopsHead', text: 'Still the best' },
-        { author: '@CelticsNation', text: 'Unstoppable' }
-      ],
-      likes: 28
-    },
-    {
-      id: 3,
-      game: 'Man City vs Liverpool',
-      sport: 'soccer',
-      status: 'LIVE • 78\'',
-      player: 'Erling Haaland',
-      play: 'Goal',
-      stats: '2 goals, 5 shots on target',
-      comments: [
-        { author: '@FootballFan', text: 'Clinical finish' },
-        { author: '@CitySupporter', text: 'World class' }
-      ],
-      likes: 42
-    },
-    {
-      id: 4,
-      game: '49ers @ Cowboys',
-      sport: 'nfl',
-      status: 'LIVE • Q3 10:42',
-      player: 'Brock Purdy',
-      play: 'Passing TD',
-      stats: '245 passing yards, 2 TDs, 0 INTs',
-      comments: [
-        { author: '@NFLAnalyst', text: 'Efficient game management' },
-        { author: '@49ersNation', text: 'Great execution' }
-      ],
-      likes: 22
-    }
-  ]
+  const sports = useMemo(() => {
+    const sportSet = new Set(items.map((item) => normaliseSport(item.sport || item.league)))
+    return ['all', ...Array.from(sportSet).filter(Boolean)]
+  }, [items])
 
-  const filteredFeed = feedItems.filter(item =>
-    (selectedSport === 'all' || item.sport === selectedSport) &&
-    (selectedGame === 'all' || item.game === selectedGame)
-  )
+  const games = useMemo(() => {
+    const filtered = items.filter((item) => {
+      if (selectedSport === 'all') return true
+      return normaliseSport(item.sport || item.league) === selectedSport
+    })
+    const gameNames = new Set(filtered.map((item) => extractGame(item)))
+    return ['all', ...Array.from(gameNames)]
+  }, [items, selectedSport])
+
+  const filteredFeed = useMemo(() => {
+    return items.filter((item) => {
+      const sport = normaliseSport(item.sport || item.league)
+      const game = extractGame(item)
+      const sportMatches = selectedSport === 'all' || sport === selectedSport
+      const gameMatches = selectedGame === 'all' || game === selectedGame
+      return sportMatches && gameMatches
+    })
+  }, [items, selectedSport, selectedGame])
 
   const toggleLike = (itemId) => {
-    setLikes(prev => ({
+    setLikes((prev) => ({
       ...prev,
       [itemId]: !prev[itemId]
     }))
   }
 
-  // Get unique games for current sport
-  const uniqueGames = ['all', ...new Set(feedItems.filter(item => selectedSport === 'all' || item.sport === selectedSport).map(item => item.game))]
-
   return (
     <div className="space-y-3">
-      {/* Sport Tabs */}
-      <div className="flex gap-4 overflow-x-auto pb-3 border-b" style={{ borderColor: '#f1f1f1' }}>
-        {['all', 'nba', 'nfl', 'soccer'].map(sport => (
+      <div className="flex items-center gap-3 overflow-x-auto pb-3 border-b" style={{ borderColor: '#f1f1f1' }}>
+        {sports.map((sport) => (
           <button
             key={sport}
             onClick={() => {
@@ -101,17 +71,36 @@ export default function FeedTab({ onAskAI }) {
               borderBottom: selectedSport === sport ? '2px solid #FF4D6D' : '2px solid transparent',
               cursor: 'pointer',
               transition: 'all 0.2s ease',
-              whiteSpace: 'nowrap'
+              whiteSpace: 'nowrap',
+              textTransform: sport === 'all' ? 'capitalize' : 'uppercase'
             }}
           >
-            {sport === 'all' ? 'All' : sport.toUpperCase()}
+            {sport === 'all' ? 'All' : sport}
           </button>
         ))}
+        {onRefresh && (
+          <button
+            onClick={onRefresh}
+            style={{
+              marginLeft: 'auto',
+              border: 'none',
+              background: '#f5f5f5',
+              borderRadius: '8px',
+              padding: '6px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            title="Refresh feed"
+          >
+            <RefreshCw size={14} />
+          </button>
+        )}
       </div>
 
-      {/* Game Filter Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-2" style={{ scrollBehavior: 'smooth' }}>
-        {uniqueGames.map(game => (
+        {games.map((game) => (
           <button
             key={game}
             onClick={() => setSelectedGame(game)}
@@ -133,119 +122,115 @@ export default function FeedTab({ onAskAI }) {
         ))}
       </div>
 
-      {/* Premium Feed Cards */}
+      {isLoading && <p style={{ fontSize: '12px', color: '#666' }}>Loading feed…</p>}
+      {error && !isLoading && (
+        <div
+          style={{
+            padding: '12px',
+            borderRadius: '8px',
+            backgroundColor: '#fff5f5',
+            color: '#b91c1c',
+            fontSize: '12px'
+          }}
+        >
+          {error}
+        </div>
+      )}
+      {!isLoading && !error && filteredFeed.length === 0 && (
+        <p style={{ fontSize: '12px', color: '#666' }}>
+          No feed updates yet. Try refreshing or check back later.
+        </p>
+      )}
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {filteredFeed.map((item) => (
-          <div 
-            key={item.id} 
-            style={{
-              background: '#ffffff',
-              borderRadius: '16px',
-              padding: '16px 20px',
-              boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
-              border: '1px solid #f1f1f1',
-              animation: 'fadeUp 0.25s ease-out'
-            }}
-          >
-            {/* Header: Status + Player */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{
-                  background: '#FF4D6D',
-                  color: 'white',
-                  padding: '3px 8px',
-                  borderRadius: '6px',
-                  fontSize: '11px',
-                  fontWeight: '600'
-                }}>LIVE</span>
-                <span style={{ fontSize: '12px', color: '#999' }}>• {item.status.split('•')[1]}</span>
-              </div>
-              <p style={{ fontSize: '12px', fontWeight: '500', color: '#999' }}>{item.game}</p>
-            </div>
+        {filteredFeed.map((item) => {
+          const gameName = extractGame(item)
+          const sport = normaliseSport(item.sport || item.league)
+          const status = item.status || item.tagline || item.phase || 'Update'
+          const headline = item.title || item.player || item.summary || 'Update'
+          const body = item.content || item.play || item.description || item.summary || ''
 
-            {/* Player + Play - Main Focus */}
-            <p style={{ fontSize: '15px', fontWeight: '600', color: '#1A1511', marginBottom: '4px', lineHeight: '1.4' }}>
-              {item.player}
-            </p>
-            
-            {/* Play Type + Stats */}
-            <p style={{ fontSize: '14px', fontWeight: '500', color: '#333', marginBottom: '12px', lineHeight: '1.4' }}>
-              {item.play} • {item.stats}
-            </p>
-
-            {/* Comment */}
-            <div style={{ marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid #f5f5f5' }}>
-              {item.comments.slice(0, 1).map((comment, idx) => (
-                <div key={idx}>
-                  <p style={{ fontSize: '12px', fontWeight: '600', color: '#666', marginBottom: '4px' }}>
-                    {comment.author}
-                  </p>
-                  <p style={{ fontSize: '13px', color: '#1A1511', lineHeight: '1.4' }}>
-                    {comment.text}
-                  </p>
+          return (
+            <div
+              key={item.id || `${gameName}-${headline}`}
+              style={{
+                background: '#ffffff',
+                borderRadius: '16px',
+                padding: '16px 20px',
+                boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
+                border: '1px solid #f1f1f1'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{
+                    background: '#FF4D6D',
+                    color: 'white',
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: '600'
+                  }}>
+                    {sport === 'all' ? 'LIVE' : sport.toUpperCase()}
+                  </span>
+                  <span style={{ fontSize: '12px', color: '#999' }}>{status}</span>
                 </div>
-              ))}
-            </div>
+                <p style={{ fontSize: '12px', fontWeight: '500', color: '#999' }}>{gameName}</p>
+              </div>
 
-            {/* Actions - Inline */}
-            <div style={{ display: 'flex', gap: '18px', opacity: 0.88, fontSize: '14px' }}>
-              <button
-                onClick={() => toggleLike(item.id)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  cursor: 'pointer',
-                  background: 'none',
-                  border: 'none',
-                  color: likes[item.id] ? '#FF4D6D' : '#999',
-                  transition: 'color 0.15s ease',
-                  padding: 0
-                }}
-              >
-                <Heart
-                  size={16}
-                  className={likes[item.id] ? 'fill-current' : ''}
-                  strokeWidth={1.5}
-                />
-                <span>{item.likes + (likes[item.id] ? 1 : 0)}</span>
-              </button>
-              <button
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  cursor: 'pointer',
-                  background: 'none',
-                  border: 'none',
-                  color: '#999',
-                  transition: 'color 0.15s ease',
-                  padding: 0
-                }}
-              >
-                <MessageCircle size={16} strokeWidth={1.5} />
-                <span>{item.comments.length}</span>
-              </button>
-              <button
-                onClick={() => onAskAI?.(item)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  cursor: 'pointer',
-                  background: 'none',
-                  border: 'none',
-                  color: '#999',
-                  transition: 'color 0.15s ease',
-                  padding: 0,
-                  fontSize: '14px'
-                }}
-              >
-                ✨ Ask
-              </button>
+              <p style={{ fontSize: '15px', fontWeight: '600', color: '#1A1511', marginBottom: '4px', lineHeight: '1.4' }}>
+                {headline}
+              </p>
+
+              {body && (
+                <p style={{ fontSize: '14px', fontWeight: '500', color: '#333', marginBottom: '12px', lineHeight: '1.4' }}>
+                  {body}
+                </p>
+              )}
+
+              <div style={{ display: 'flex', gap: '18px', opacity: 0.88, fontSize: '14px' }}>
+                <button
+                  onClick={() => toggleLike(item.id || headline)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    cursor: 'pointer',
+                    background: 'none',
+                    border: 'none',
+                    color: likes[item.id || headline] ? '#FF4D6D' : '#999'
+                  }}
+                >
+                  <Heart
+                    size={16}
+                    fill={likes[item.id || headline] ? '#FF4D6D' : 'none'}
+                    strokeWidth={1.5}
+                  />
+                  {likes[item.id || headline] ? 'Liked' : 'Like'}
+                </button>
+                <button
+                  onClick={() =>
+                    onAskAI?.(
+                      `Explain this update: ${headline}${body ? ` — ${body}` : ''}`
+                    )
+                  }
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    cursor: 'pointer',
+                    background: 'none',
+                    border: 'none',
+                    color: '#999'
+                  }}
+                >
+                  <MessageCircle size={16} />
+                  Ask AI
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )

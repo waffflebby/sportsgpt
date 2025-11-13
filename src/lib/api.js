@@ -1,5 +1,8 @@
 // SportsGPT API Client
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
+const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL ||
+  'https://backend-bold-smoke-6218.fly.dev'
+)
 
 class ApiClient {
   constructor() {
@@ -9,8 +12,11 @@ class ApiClient {
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`
     const config = {
+      mode: 'cors',
+      credentials: 'omit',
       headers: {
         'Content-Type': 'application/json',
+        Accept: 'application/json',
         ...options.headers
       },
       ...options
