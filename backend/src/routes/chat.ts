@@ -1,58 +1,26 @@
-import { Elysia, t } from 'elysia'
-import { statements } from '../database/init'
-import { generateChatResponse } from '../services/openai'
+import { z } from "zod";
+import type { Hono } from "hono";
+import type { AppBindings } from "../types";
 
-export const chatRoutes = new Elysia({ prefix: '/chat' })
-  .post('/send', async ({ body }) => {
-    const { conversation_id, message } = body as { conversation_id?: number; message: string }
+const chatSchema = z.object({
+  conversation_id: z.coerce.number().int().optional(),
+  message: z.string().min(1)
+});
 
-    try {
-      let conversationId = conversation_id
+export default function registerChatRoutes(app: Hono<AppBindings>) {
+  app.post("/chat/send", async (c) => {
+    const body = await c.req.json();
+    const data = chatSchema.parse(body);
 
-      // Create new conversation if none provided
-      if (!conversationId) {
-        const result = statements.insertConversation.run(message.substring(0, 50) + (message.length > 50 ? '...' : ''))
-        conversationId = result.lastInsertRowid as number
-      }
+    const services = c.get("services");
+    const result = await services.chat.sendMessage({
+      conversationId: data.conversation_id,
+      message: data.message
+    });
 
-      // Save user message
-      statements.insertMessage.run(conversationId, 'user', message)
-
-      // Get conversation history
-      const messages = statements.getMessagesByConversation.all(conversationId) as any[]
-
-      // Convert to OpenAI format
-      const chatMessages = messages.map(msg => ({
-        role: msg.role,
-        content: msg.content
-      }))
-
-      // Generate AI response
-      const aiResponse = await generateChatResponse(chatMessages)
-
-      // Save AI response
-      statements.insertMessage.run(conversationId, 'assistant', aiResponse)
-
-      // Update conversation timestamp
-      statements.updateConversation.run(
-        `${message.substring(0, 30)}${message.length > 30 ? '...' : ''}`,
-        conversationId
-      )
-
-      return {
-        response: aiResponse,
-        conversation_id: conversationId
-      }
-    } catch (error) {
-      console.error('Chat error:', error)
-      return {
-        error: 'Failed to process chat message',
-        conversation_id: conversationId || null
-      }
-    }
-  }, {
-    body: t.Object({
-      conversation_id: t.Optional(t.Number()),
-      message: t.String()
-    })
-  })
+    return c.json({
+      response: result.response,
+      conversation_id: result.conversationId
+    });
+  });
+}

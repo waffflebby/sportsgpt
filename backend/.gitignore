@@ -1,0 +1,6 @@
+node_modules
+bun.lockb
+dist
+sqlite.db
+*.sqlite
+.env

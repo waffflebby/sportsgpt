@@ -1,83 +1,46 @@
-import { Elysia, t } from 'elysia'
-import { getLiveGames, getGameStats, getTeamGameLogs } from '../services/apiSports'
+import type { Hono } from "hono";
+import { HTTPException } from "hono/http-exception";
+import { z } from "zod";
+import type { AppBindings } from "../types";
 
-export const gamesRoutes = new Elysia({ prefix: '/games' })
-  .get('/live', async () => {
-    try {
-      const games = await getLiveGames()
-      return { games }
-    } catch (error) {
-      console.error('Live games error:', error)
-      return { error: 'Failed to fetch live games', games: [] }
+const gameIdParamSchema = z.object({
+  game_id: z.string()
+});
+
+const teamIdParamSchema = z.object({
+  team_id: z.string()
+});
+
+export default function registerGameRoutes(app: Hono<AppBindings>) {
+  app.get("/games/live", async (c) => {
+    const services = c.get("services");
+    const games = await services.games.getLiveGames();
+    return c.json({ games });
+  });
+
+  app.get("/games/:game_id/stats", async (c) => {
+    const params = gameIdParamSchema.parse(c.req.param());
+    const gameId = Number(params.game_id);
+
+    if (Number.isNaN(gameId)) {
+      throw new HTTPException(400, { message: "Invalid game_id" });
     }
-  })
-  .get('/:gameId/stats', async ({ params }) => {
-    const { gameId } = params
 
-    try {
-      // Try NBA first
-      let game = await getGameStats(parseInt(gameId), 'nba')
+    const services = c.get("services");
+    const stats = await services.games.getGameStats(gameId);
+    return c.json(stats);
+  });
 
-      // If not found, try NFL
-      if (!game) {
-        game = await getGameStats(parseInt(gameId), 'nfl')
-      }
+  app.get("/games/:team_id/logs", async (c) => {
+    const params = teamIdParamSchema.parse(c.req.param());
+    const teamId = Number(params.team_id);
 
-      if (!game) {
-        return { error: 'Game not found', game: null, player_stats: [] }
-      }
-
-      return {
-        game: {
-          id: game.id,
-          home_team: game.teams?.home?.name,
-          away_team: game.teams?.away?.name,
-          home_score: game.scores?.home?.total || 0,
-          away_score: game.scores?.away?.total || 0,
-          status: game.status?.long,
-          quarter: game.periods?.current,
-          time: game.status?.timer
-        },
-        player_stats: game.players || []
-      }
-    } catch (error) {
-      console.error('Game stats error:', error)
-      return { error: 'Failed to fetch game stats', game: null, player_stats: [] }
+    if (Number.isNaN(teamId)) {
+      throw new HTTPException(400, { message: "Invalid team_id" });
     }
-  }, {
-    params: t.Object({
-      gameId: t.String()
-    })
-  })
-  .get('/:teamId/logs', async ({ params }) => {
-    const { teamId } = params
 
-    try {
-      // Try NBA first
-      let logs = await getTeamGameLogs(parseInt(teamId), 'nba')
-
-      // If empty, try NFL
-      if (logs.length === 0) {
-        logs = await getTeamGameLogs(parseInt(teamId), 'nfl')
-      }
-
-      return {
-        logs: logs.map(log => ({
-          id: log.id,
-          date: log.date,
-          home_team: log.teams?.home?.name,
-          away_team: log.teams?.away?.name,
-          home_score: log.scores?.home?.total || 0,
-          away_score: log.scores?.away?.total || 0,
-          winner: log.scores?.home?.total > log.scores?.away?.total ? 'home' : 'away'
-        })).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      }
-    } catch (error) {
-      console.error('Team logs error:', error)
-      return { error: 'Failed to fetch team logs', logs: [] }
-    }
-  }, {
-    params: t.Object({
-      teamId: t.String()
-    })
-  })
+    const services = c.get("services");
+    const logs = await services.games.getTeamLogs(teamId);
+    return c.json({ logs });
+  });
+}
