@@ -43,12 +43,30 @@ app.use("*", async (c, next) => {
 // Register all routes
 registerRoutes(app);
 
-// Background feed refresh - starts after first request
+// Migration flag
+let migrationComplete = false;
+
+// Run migrations on first request (when volume is mounted)
+async function ensureMigrations() {
+  if (migrationComplete) return;
+  
+  try {
+    logger.info("Running migrations (volume should be mounted now)...");
+    await runMigrations();
+    migrationComplete = true;
+    logger.info("Migrations completed successfully");
+  } catch (error) {
+    logger.error("Migration failed:", error);
+    // Don't crash the server, but log the error
+  }
+}
+
+// Background feed refresh
 let feedRefreshStarted = false;
 const startFeedRefresh = () => {
   if (feedRefreshStarted) return;
   feedRefreshStarted = true;
-
+  
   // Initial seed
   services.feed
     .refreshFeed()
@@ -72,13 +90,17 @@ const startFeedRefresh = () => {
   }, 20_000);
 };
 
-// Export server configuration (Bun will auto-serve this)
+// Export server configuration
 export default {
   port: Number(Bun.env.PORT ?? process.env.PORT ?? 3000),
   hostname: "0.0.0.0",
   fetch: async (request: Request, server: any) => {
-    // Start feed refresh on first request
+    // Run migrations on first request
+    await ensureMigrations();
+    
+    // Start feed refresh
     startFeedRefresh();
+    
     return app.fetch(request, { server });
   }
 };
@@ -86,12 +108,13 @@ export default {
 // Run migrations when executed directly (for CI smoke tests)
 if (import.meta.main) {
   const isSmokeTest = process.argv.includes("--smoke-test");
-
-  logger.info("Running migrations...");
-  await runMigrations();
-  logger.info("Migrations complete");
-
-  if (isSmokeTest) {
+  
+  if (!isSmokeTest) {
+    logger.info("Running migrations manually...");
+    await runMigrations();
+    logger.info("Migrations complete");
+    process.exit(0);
+  } else {
     // Smoke test: start server, hit /health, exit
     const port = Number(Bun.env.PORT ?? process.env.PORT ?? 3000);
     const server = Bun.serve({
@@ -113,7 +136,5 @@ if (import.meta.main) {
     } finally {
       server.stop();
     }
-  } else {
-    logger.info("Migrations completed successfully. Ready to deploy.");
   }
 }
