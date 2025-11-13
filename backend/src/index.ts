@@ -108,9 +108,11 @@ async function bootstrap() {
   }, 20_000);
 }
 
-bootstrap().catch((error) => {
-  logger.error("Failed to start server", error);
-  process.exit(1);
-});
+if (import.meta.main) {
+  bootstrap().catch((error) => {
+    logger.error("Failed to start server", error);
+    process.exit(1);
+  });
+}
 
 export default app;
