@@ -17,7 +17,7 @@ type GameStats = {
   player_stats: Record<string, unknown>[];
 };
 
-type TeamLog = Record<string, unknown> & { date?: string };
+type TeamLog = Record<string, unknown> & { date?: string | { start?: string } };
 
 type PlayerStatsResponse = {
   bio: Record<string, unknown>;

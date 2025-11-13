@@ -11,5 +11,7 @@ RUN bun install --frozen-lockfile
 
 COPY . .
 
+# Use Bun without the default entrypoint to avoid double Bun.serve
+ENTRYPOINT []
 # Run server (migrations happen separately via Fly release_command)
 CMD ["bun", "run", "src/index.ts"]

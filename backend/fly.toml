@@ -33,6 +33,7 @@ primary_region = 'iad'
     timeout = "5s"
     grace_period = "5s"
     method = "GET"
+    port = 3000
     path = "/health"
 
 [deploy]
