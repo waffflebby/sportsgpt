@@ -137,10 +137,3 @@ SQLite volume already configured in /backend.
 ✔ Ready for OpenAI key
 ❌ Frontend not connected to backend
 ❌ No real sports stats responses yet
-
-
-
-Add a Netlify button
-
-
-Just tell me.
