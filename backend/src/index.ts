@@ -8,10 +8,7 @@ import { db, services } from "./container";
 import { runMigrations } from "./db/migrate";
 import type { AppBindings } from "./types";
 
-const argv = Array.isArray(Bun.argv) ? Bun.argv : [];
-const procArgv = typeof process !== "undefined" && Array.isArray(process.argv) ? process.argv : [];
-const isSmokeTest = [...new Set([...argv, ...procArgv])].includes("--smoke-test");
-
+// Parse CORS origins
 const configuredOrigins = (Bun.env.CORS_ORIGINS ?? process.env.CORS_ORIGINS ?? "")
   .split(",")
   .map((origin) => origin.trim())
@@ -25,8 +22,10 @@ const allowedOrigins = Array.from(
   ])
 );
 
+// Initialize Hono app
 const app = new Hono<AppBindings>();
 
+// Apply middleware
 app.use(cors({
   origin: allowedOrigins,
   allowMethods: ["GET", "POST", "OPTIONS"],
@@ -41,50 +40,16 @@ app.use("*", async (c, next) => {
   await next();
 });
 
+// Register all routes
 registerRoutes(app);
 
-let migrated = false;
-let migratePromise: Promise<void> | null = null;
-async function safeMigrate() {
-  if (migrated) return;
-  if (!migratePromise) {
-    migratePromise = runMigrations()
-      .then(() => {
-        migrated = true;
-      })
-      .catch((error) => {
-        migratePromise = null;
-        throw error;
-      });
-  }
-  await migratePromise;
-}
+// Background feed refresh - starts after first request
+let feedRefreshStarted = false;
+const startFeedRefresh = () => {
+  if (feedRefreshStarted) return;
+  feedRefreshStarted = true;
 
-async function bootstrap() {
-  const port = Number(Bun.env.PORT) || 3000;
-  console.log("Starting server on port:", port);
-  const server = Bun.serve({
-    port,
-    hostname: "0.0.0.0",
-    fetch: app.fetch
-  });
-
-  console.log(`Server running on port ${port}`);
-  logger.info(`Server listening on http://0.0.0.0:${server.port}`);
-
-  if (isSmokeTest) {
-    try {
-      const response = await fetch(`http://127.0.0.1:${server.port}/health`);
-      if (!response.ok) {
-        throw new Error(`Healthcheck failed with status ${response.status}`);
-      }
-      logger.info("Smoke test healthcheck succeeded");
-    } finally {
-      server.stop();
-    }
-    return;
-  }
-
+  // Initial seed
   services.feed
     .refreshFeed()
     .then((count) => {
@@ -94,6 +59,7 @@ async function bootstrap() {
     })
     .catch((error) => logger.error("Initial feed refresh failed", error));
 
+  // Periodic refresh every 20 seconds
   setInterval(() => {
     services.feed
       .refreshFeed()
@@ -104,13 +70,50 @@ async function bootstrap() {
       })
       .catch((error) => logger.error("Feed refresh failed", error));
   }, 20_000);
-}
+};
 
+// Export server configuration (Bun will auto-serve this)
+export default {
+  port: Number(Bun.env.PORT ?? process.env.PORT ?? 3000),
+  hostname: "0.0.0.0",
+  fetch: async (request: Request, server: any) => {
+    // Start feed refresh on first request
+    startFeedRefresh();
+    return app.fetch(request, { server });
+  }
+};
+
+// Run migrations when executed directly (for CI smoke tests)
 if (import.meta.main) {
-  bootstrap().catch((error) => {
-    logger.error("Failed to start server", error);
-    process.exit(1);
-  });
-}
+  const isSmokeTest = process.argv.includes("--smoke-test");
 
-export default app;
+  logger.info("Running migrations...");
+  await runMigrations();
+  logger.info("Migrations complete");
+
+  if (isSmokeTest) {
+    // Smoke test: start server, hit /health, exit
+    const port = Number(Bun.env.PORT ?? process.env.PORT ?? 3000);
+    const server = Bun.serve({
+      port,
+      hostname: "127.0.0.1",
+      fetch: app.fetch
+    });
+
+    try {
+      const response = await fetch(`http://127.0.0.1:${server.port}/health`);
+      if (!response.ok) {
+        throw new Error(`Healthcheck failed with status ${response.status}`);
+      }
+      logger.info("Smoke test healthcheck succeeded");
+      process.exit(0);
+    } catch (error) {
+      logger.error("Smoke test failed", error);
+      process.exit(1);
+    } finally {
+      server.stop();
+    }
+  } else {
+    logger.info("Migrations completed successfully. Ready to deploy.");
+  }
+}
